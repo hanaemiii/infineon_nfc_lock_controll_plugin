@@ -65,7 +65,7 @@ class InfineonNfcLockControlPlugin : FlutterPlugin, MethodCallHandler, ActivityA
         currentActivity = binding.activity
         binding.addOnNewIntentListener { intent ->
             handleNewIntent(intent)
-            true // <--- Make sure this is TRUE
+            true
         }
         Log.d(TAG, "onAttachedToActivity: Activity attached.")
         // Initialize SmackSdk and ViewModel here, as Activity is available
@@ -115,7 +115,6 @@ class InfineonNfcLockControlPlugin : FlutterPlugin, MethodCallHandler, ActivityA
                 }
 
 
-                // --- NEW: Signal to Flutter that initialization is complete ---
                 if (smackSdk != null && registrationViewModel != null && !isPluginInitialized) {
                     isPluginInitialized = true
                     currentActivity?.runOnUiThread {
@@ -134,38 +133,34 @@ class InfineonNfcLockControlPlugin : FlutterPlugin, MethodCallHandler, ActivityA
     override fun onDetachedFromActivityForConfigChanges() {
         Log.d(TAG, "onDetachedFromActivityForConfigChanges")
         currentActivity = null
-        // Do NOT nullify smackSdk and registrationViewModel here, as the activity will be reattached.
-        // isPluginInitialized = false // Reset if you want to re-signal init, but generally not needed here.
     }
 
     override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
         currentActivity = binding.activity
         binding.addOnNewIntentListener { intent ->
             handleNewIntent(intent)
-            true // <--- Make sure this is TRUE
+            true 
         }
         Log.d(TAG, "onReattachedToActivityForConfigChanges: Activity reattached.")
-        initializeSmackAndViewModel() // Re-initialize or confirm initialization
+        initializeSmackAndViewModel() 
     }
 
     override fun onDetachedFromActivity() {
         Log.d(TAG, "onDetachedFromActivity: Activity detached.")
-        // SmackSdk and ViewModel are tied to the activity lifecycle.
         currentActivity = null
-        smackSdk = null // Nullify the references for proper cleanup
+        smackSdk = null 
         nfcAdapterWrapper = null
         registrationViewModel = null
-        isPluginInitialized = false // Reset state as activity is completely gone
+        isPluginInitialized = false 
     }
 
     private fun handleNewIntent(intent: Intent) {
         Log.d(TAG, "onNewIntent called in plugin for intent: ${intent.action}")
-        // --- CRITICAL: Ensure you process NFC_ADAPTER.EXTRA_TAG here ---
         if (NfcAdapter.ACTION_NDEF_DISCOVERED == intent.action ||
             NfcAdapter.ACTION_TECH_DISCOVERED == intent.action ||
             NfcAdapter.ACTION_TAG_DISCOVERED == intent.action) {
 
-            smackSdk?.onNewIntent(intent) // Use safe call operator
+            smackSdk?.onNewIntent(intent) 
 
             val tag: Tag? =
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -178,16 +173,13 @@ class InfineonNfcLockControlPlugin : FlutterPlugin, MethodCallHandler, ActivityA
             Log.d(TAG, "Tag detected? $isLockPresent")
             channel.invokeMethod("lockPresent", isLockPresent)
 
-            // --- You returned true from addOnNewIntentListener, which is good. ---
-            // --- This part of the code correctly processes the tag. ---
         } else {
             Log.d(TAG, "Unhandled intent action: ${intent.action}")
         }
     }
 
     override fun onMethodCall(call: MethodCall, result: Result) {
-        // --- NEW: Check initialization status first for all calls needing the ViewModel ---
-        if (!isPluginInitialized && call.method != "getPlatformVersion") { // getPlatformVersion can be handled without ViewModel
+        if (!isPluginInitialized && call.method != "getPlatformVersion") { 
              Log.e(TAG, "Plugin not initialized yet. Cannot process method call: ${call.method}")
              result.error(
                  "NOT_INITIALIZED",
@@ -274,7 +266,6 @@ class InfineonNfcLockControlPlugin : FlutterPlugin, MethodCallHandler, ActivityA
                         }
                 )
             }
-            // "lockPresent" is handled at the top
             else -> result.notImplemented()
         }
     }
@@ -283,15 +274,11 @@ class InfineonNfcLockControlPlugin : FlutterPlugin, MethodCallHandler, ActivityA
         Log.d(TAG, "onDetachedFromEngine")
         channel.setMethodCallHandler(null)
         applicationContext = null
-        // Do not nullify smackSdk/viewModel here, they are tied to activity lifecycle
-        // which has its own detach methods.
     }
 }
 
-// ViewModel and Factory classes remain the same
 class RegistrationViewModel(private val smackSdk: SmackSdk) : ViewModel() {
-    // ... (rest of the ViewModel code)
-    val setupResult = MutableLiveData<Boolean>() // Consider if this is still needed or just direct result
+    val setupResult = MutableLiveData<Boolean>() 
 
     fun setupNewLock(
             userName: String,
